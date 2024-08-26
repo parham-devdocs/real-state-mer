@@ -11,7 +11,7 @@ const Input = ({ type, label, onChangeHandler, variant,name,value }) => {
       variant={variant}
       name={name}
       value={value}
-          required
+     
     />
   );
 };

@@ -1,12 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import { Box } from "@mui/material";
 import Input from "../components/Ui/Input";
 import Button from "../components/Ui/Button";
-
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import "../styles/registerPage.scss";
 
 const RegisterPage = () => {
+    const [matchPassword, setMatchPassword] = useState(true);
+    const [errors, setErrors] = useState({
+      firstName: "", // Corrected the typo
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+const navigate=useNavigate()
   const [formData, setFormData] = useState({
     firstName: "", // Corrected the typo
     lastName: "",
@@ -15,21 +25,85 @@ const RegisterPage = () => {
     confirmPassword: "",
     profileImage: null,
   });
+useEffect(() => {
+  console.log(formData.password);
+
+  // Reset errors
+  const newErrors = {
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  };
+
+  // Check for errors
+  if (!formData.firstName) {
+    newErrors.firstName = "First name is required";
+  }
+
+  if (!formData.lastName) {
+    newErrors.lastName = "Last name is required";
+  }
+
+  if (!formData.email.includes("@")) {
+    newErrors.email = "Email is not valid";
+  }
+
+  if (!formData.password) {
+    newErrors.password = "Password is required";
+  } else if (formData.password !== formData.confirmPassword) {
+    newErrors.password = "Passwords do not match";
+  }
+
+  if (!formData.confirmPassword) {
+    newErrors.confirmPassword = "Confirm password is required";
+  }
+
+  // Update errors state
+  setErrors(newErrors);
+}, [formData]);
 
   const ChangeHandler = (event) => {
       const { name, value, files } = event.target;
-      console.log(event.target.name)
-      
     setFormData((prevData) => ({
       ...prevData,
       [name]: name === "profileImage" ? files[0] : value,
     }));
-      console.log(formData)
+      console.log(name)
   };
 
-  const submitHandler = (event) => {
+  const submitHandler = async (event) => {
     event.preventDefault(); // Prevent default form submission
-    console.log(formData.profileImage);
+
+
+  
+
+    try {
+      if (matchPassword) {
+        const formDataToSend = new FormData();
+        // Append form data
+        for (const key in formData) {
+          formDataToSend.append(key, formData[key]);
+        }
+
+        const res = await axios.post(
+          "http://localhost:5000/api/v1/auth/register",
+          formDataToSend,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data", // Set the content type
+            },
+          }
+        );
+          if (res.status === 200) {
+            console.log("navigate")
+            navigate('/login')
+        }
+      }
+    } catch (error) {
+      console.log("registeration failed");
+    }
   };
 
   const inputFields = [
@@ -51,7 +125,8 @@ const RegisterPage = () => {
     {
       label: "Password",
       onChangeHandler: ChangeHandler,
-      name: "password",
+        name: "password",
+      error:"password not matched"
     },
     {
       label: "Confirm Password",
@@ -72,12 +147,14 @@ const RegisterPage = () => {
       >
         <form onSubmit={submitHandler}>
           {inputFields.map((item) => (
-            <Input
-              key={item.label}
-              onChangeHandler={item.onChangeHandler}
-              label={item.label}
-              name={item.name}
-            />
+            <>
+              <Input
+                key={item.label}
+                onChangeHandler={item.onChangeHandler}
+                label={item.label}
+                name={item.name}
+              />
+            </>
           ))}
           <input
             type="file"
@@ -100,6 +177,11 @@ const RegisterPage = () => {
             <CloudUploadOutlinedIcon fontSize="large" />
             <span>Upload Profile Photo</span>
           </label>
+          {formData.profileImage && (
+            <div className="imgContainer">
+              <img src={URL.createObjectURL(formData.profileImage)} />
+            </div>
+          )}
           <Button
             variant="contained"
             size="large"
@@ -117,6 +199,15 @@ const RegisterPage = () => {
             Already Have An Account? Login Here
           </Button>
         </form>
+        {/* {!matchPassword && <p className="error-message">password must match with confirm password</p>} */}
+        {Object.entries(errors).map(
+          ([key, error]) =>
+            error && (
+              <p key={key} className="error-message">
+                {error}
+              </p>
+            )
+        )}
       </Box>
     </div>
   );
